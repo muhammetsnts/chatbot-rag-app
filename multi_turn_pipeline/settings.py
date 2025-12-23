@@ -26,8 +26,8 @@ EMBEDDING_MODEL_NAME: str = "BAAI/bge-base-en-v1.5"
 RERANKER_MODEL_NAME: str = "BAAI/bge-reranker-base"
 
 # LLM model for RAG
-#CLOUD_LLM_MODEL_NAME: str = "google/gemma-3-27b-it:free",
-CLOUD_LLM_MODEL_NAME: str = "google/gemma-3-12b-it:free",
+CLOUD_LLM_MODEL_NAME: str = "google/gemma-3-27b-it:free",
+#CLOUD_LLM_MODEL_NAME: str = "google/gemma-3-12b-it:free",
 
 # Path to OpenRouter API key
 OPENROUTER_API_KEY_PATH: str = PROJECT_ROOT / ".env"

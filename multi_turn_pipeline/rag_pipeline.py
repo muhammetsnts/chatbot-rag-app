@@ -1,3 +1,4 @@
+from langchain_core.documents.base import Document
 import os
 import re
 import markdown
@@ -8,13 +9,11 @@ from dotenv import load_dotenv
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
-    AutoModelForCausalLM,
-    pipeline,
 )
-from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
-
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_community.vectorstores import Chroma
+from langchain_community.retrievers import BM25Retriever
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
@@ -133,28 +132,60 @@ def get_bge_embeddings() -> HuggingFaceEmbeddings:
 # ---------------------------------------------------------------------------
 # Retrieval + reranking
 # ---------------------------------------------------------------------------
+def rrf_merge(
+    ranked_lists: List[List[Document]],
+    k: int = 7,
+    rrf_k: int = 60,
+) -> List[Document]:
+    """
+    Reciprocal Rank Fusion (RRF). Reorders the retrieved chunks by combining the vector search and BM25.
+    """
+    scores: Dict[str, float] = {}
+    doc_map: Dict[str, Document] = {}
+
+    for docs in ranked_lists:
+        for rank, doc in enumerate(docs):
+            key = doc.page_content
+            doc_map[key] = doc
+            scores[key] = scores.get(key, 0.0) + 1.0 / (rrf_k + rank + 1)
+
+    ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:k]
+    return [doc_map[key] for key, _ in ranked]
+
 
 def retrieve_documents_with_hybrid_search(
     query: str,
     vs: Chroma,
-    k: int = 6,
-    initial_k: Optional[int] = None,
+    k: int = 7,
 ) -> List[Document]:
     """
     Retrieve top-k documents for `query` from `vs` using hybrid search (vector search + BM25).
     """
     
-    retriever = vs.as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": k},
-    )
-    docs = retriever.invoke(query)  # returns list[Document]
-    return docs
+    # 1. Vector search
+    #retriever = vs.as_retriever(search_type="mmr",search_kwargs={"k": k, "fetch_k":20, "lambda_mult":0.6})
+    retriever = vs.as_retriever(search_type="similarity",search_kwargs={"k": k})
+    vector_docs = retriever.invoke(query)  # docs from vector search
+
+    # 2. BM25 search
+    data = vs.get(include=["documents", "metadatas"])
+    all_docs = [
+        Document(page_content=d, metadata=m)
+        for d, m in zip(data["documents"], data["metadatas"])
+    ]
+
+    bm25_retriever = BM25Retriever.from_documents(all_docs)
+    bm25_retriever.k = k
+    bm25_docs = bm25_retriever.invoke(query)  # docs from BM25 search
+
+    # 3. RRF merge
+    hybrid_docs = rrf_merge(ranked_lists = [vector_docs, bm25_docs], k=k, rrf_k=60)
+    return hybrid_docs
 
 def retrieve_documents_without_reranker(
     query: str,
     vs: Chroma,
-    k: int = 6,
+    k: int = 7,
 ) -> List[Document]:
     """
     Retrieve top-k documents for `query` from `vs` without reranker.
@@ -165,19 +196,15 @@ def retrieve_documents_without_reranker(
 def retrieve_documents_with_reranker(
     query: str,
     vs: Chroma,
-    k: int = 6,
-    initial_k: Optional[int] = None,
+    k: int = 7,
 ) -> List[Document]:
     """
     Retrieve top-k documents for `query` from `vs` using reranker.
     """
 
-    if initial_k is None:
-        initial_k = max(k * 4, k + 8)
-
     print(f"Retrieving {k} documents with reranker for query: {query}")
-    
-    candidate_docs = retrieve_documents_with_hybrid_search(query, vs, initial_k)  # list[Document]
+
+    candidate_docs = retrieve_documents_with_hybrid_search(query, vs, k)  # list[Document]
 
     if not candidate_docs:
         return []
@@ -196,9 +223,8 @@ def retrieve_documents_with_reranker(
 def retrieve_documents(
     query: str,
     vs: Chroma,
-    k: int = 6,
+    k: int = 7,
     use_reranker: bool = False,
-    initial_k: Optional[int] = None,
 ) -> List[Document]:
     """
     Retrieve top-k documents for `query` from `vs`.
@@ -207,7 +233,7 @@ def retrieve_documents(
     if not use_reranker:
         return retrieve_documents_without_reranker(query, vs, k)
     else:
-        return retrieve_documents_with_reranker(query, vs, k, initial_k)
+        return retrieve_documents_with_reranker(query, vs, k)
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +276,6 @@ def build_or_load_vectorstore() -> Chroma:
             collection_metadata={"hnsw:space": "cosine"}
         )
         print("Vectorstore loaded successfully.")
-        print("Document count:", vectorstore._collection.count())
         
         _VECTORSTORE = vectorstore
         return _VECTORSTORE
@@ -274,7 +299,6 @@ def build_or_load_vectorstore() -> Chroma:
             collection_metadata={"hnsw:space": "cosine"}
         )
         print("Vectorstore loaded successfully.")
-        print("Document count:", vectorstore._collection.count())
         
         _VECTORSTORE = vectorstore
         return _VECTORSTORE
@@ -447,7 +471,7 @@ def rewrite_question_with_history(llm, question: str, history: Optional[List[Dic
 # ---------------------------------------------------------------------------
 def ask_question(
     question: str,
-    k: int = 6,
+    k: int = 8,
     use_reranker: bool = False,
     session_id: str = "default_session",
 ) -> str:
