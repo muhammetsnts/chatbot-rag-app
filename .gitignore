@@ -1,0 +1,6 @@
+# Folders & Files
+chroma_db/
+chat_history.db/
+
+# OpenRouter API Key
+.env

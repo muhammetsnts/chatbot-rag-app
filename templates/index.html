@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Music Gear AI Assistant</title>
+    <link
+      rel="stylesheet"
+      href="/static/styles.css"
+    />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="hero-content">
+          <h1>Music Gear AI Assistant</h1>
+          <p>
+            Ask anything about musical instruments and music equipment, powered
+            by your RAG pipeline and product knowledge base.
+          </p>
+          <div class="hero-badges">
+            <span class="badge">RAG-powered</span>
+            <span class="badge">Context-aware</span>
+            <span class="badge">Multi-turn chat</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="main">
+        <section class="chat-card">
+          <div class="chat-header">
+            <div class="chat-title">
+              <span class="status-dot"></span>
+              <h2>Chat with the Assistant</h2>
+            </div>
+            <div class="chat-controls">
+              <label class="toggle">
+                <input
+                  type="checkbox"
+                  id="reranker-toggle"
+                />
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Use reranker</span>
+              </label>
+            </div>
+          </div>
+
+          <div
+            id="chat-window"
+            class="chat-window"
+          >
+            <div class="message assistant">
+              <div class="avatar">AI</div>
+              <div class="bubble">
+                <p>
+                  Hi! I’m your music product assistant. Ask me about guitars,
+                  synths, studio gear, or any instrument in the catalog.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form
+            id="chat-form"
+            class="chat-input-row"
+          >
+            <textarea
+              id="user-input"
+              class="chat-input"
+              rows="2"
+              placeholder="Ask a question about a product, compare instruments, or request a summary..."
+            ></textarea>
+            <button
+              type="submit"
+              id="send-btn"
+              class="send-btn"
+            >
+              Send
+            </button>
+          </form>
+
+          <div
+            id="chat-status"
+            class="chat-status"
+          ></div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span>Built with FastAPI · LangChain · OpenRouter</span>
+      </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+  </html>
+
+

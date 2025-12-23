@@ -1,0 +1,42 @@
+# --- Core API Components ---
+
+fastapi==0.111.0  # The web framework
+uvicorn[standard]==0.30.1 # The ASGI server to run the API (Syntax fixed)
+pydantic==2.8.2 # For data validation (used by FastAPI models)
+
+
+# Core LangChain packages
+langchain==1.1.0
+langchain-classic==1.0.0
+langchain-community==0.4.1
+langchain-core==1.1.0
+langchain-huggingface==1.1.0
+langchain-openai==1.1.0
+langchain-text-splitters==1.0.0
+
+
+# Vector store
+chromadb>=0.4.22
+
+# Embeddings
+sentence-transformers>=2.6.0
+
+# HF models (embeddings + reranker)
+transformers>=4.40.0
+accelerate>=0.30.0
+torch>=2.6
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+markdown==3.6  # For converting LLM output to HTML in rag_pipeline
+redis==5.0.0     # Included because it is imported in main.py
+
+# Optional (interactive notebooks)
+jupyter
+ipykernel
+
+# For safety
+typing-extensions>=4.7.0
+
