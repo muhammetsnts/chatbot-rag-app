@@ -134,7 +134,7 @@ def get_bge_embeddings() -> HuggingFaceEmbeddings:
 # ---------------------------------------------------------------------------
 def rrf_merge(
     ranked_lists: List[List[Document]],
-    k: int = 7,
+    k: int = 10,
     rrf_k: int = 60,
 ) -> List[Document]:
     """
@@ -156,14 +156,13 @@ def rrf_merge(
 def retrieve_documents_with_hybrid_search(
     query: str,
     vs: Chroma,
-    k: int = 7,
+    k: int = 10,
 ) -> List[Document]:
     """
     Retrieve top-k documents for `query` from `vs` using hybrid search (vector search + BM25).
     """
     
     # 1. Vector search
-    #retriever = vs.as_retriever(search_type="mmr",search_kwargs={"k": k, "fetch_k":20, "lambda_mult":0.6})
     retriever = vs.as_retriever(search_type="similarity",search_kwargs={"k": k})
     vector_docs = retriever.invoke(query)  # docs from vector search
 
@@ -185,7 +184,7 @@ def retrieve_documents_with_hybrid_search(
 def retrieve_documents_without_reranker(
     query: str,
     vs: Chroma,
-    k: int = 7,
+    k: int = 10,
 ) -> List[Document]:
     """
     Retrieve top-k documents for `query` from `vs` without reranker.
@@ -196,7 +195,7 @@ def retrieve_documents_without_reranker(
 def retrieve_documents_with_reranker(
     query: str,
     vs: Chroma,
-    k: int = 7,
+    k: int = 10,
 ) -> List[Document]:
     """
     Retrieve top-k documents for `query` from `vs` using reranker.
@@ -223,7 +222,7 @@ def retrieve_documents_with_reranker(
 def retrieve_documents(
     query: str,
     vs: Chroma,
-    k: int = 7,
+    k: int = 10,
     use_reranker: bool = False,
 ) -> List[Document]:
     """
@@ -565,6 +564,11 @@ def convert_answer_to_html(answer: str) -> str:
         The answer converted to HTML format.
     """
 
-    modified_answer = re.sub(r"(\*\*.+?\*\*)\n\*", r"\1\n\n*", answer)
+    modified_answer = re.sub(
+        r"(\*\*[^*\n]+?\*\*)\n(-|\*)",
+        r"\1\n\n\2",
+        answer,
+    )
+
     html_answer = markdown.markdown(modified_answer)
     return html_answer
