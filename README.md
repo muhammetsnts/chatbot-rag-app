@@ -28,6 +28,8 @@ A **FastAPI backend** serves both the API and a modern **web UI** (landing page 
 
 ## 🏗️ Architecture – Quick Tour
 
+<img width="1321" height="730" alt="SystemDesing" src="https://github.com/user-attachments/assets/e3b49cbb-42ec-44f5-96ac-6bafd9e7a3d0" />
+
 * `multi_turn_pipeline/rag_pipeline.py` → Full RAG pipeline (`ask_question` is the main entrypoint)
 * `multi_turn_pipeline/history_db.py` → SQLite persistence for chat history
 * `multi_turn_pipeline/settings.py` → Paths & model settings (Chroma dir, `.env`, etc.)
